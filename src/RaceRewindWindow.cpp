@@ -1,5 +1,7 @@
 #include "RaceRewindWindow.h"
 
+#include "GeodatabaseReader.h"
+
 #include <Basemap.h>
 #include <GraphicsOverlay.h>
 #include <MapGraphicsView.h>
@@ -31,10 +33,14 @@ namespace rrewind
 
         this->setCentralWidget(mapView);
 
+        // TODO: Remove hardcode
+        GeodatabaseReader reader("c:/users/etho/desktop/mygdb.gdb");
+        std::vector<TelemetryEntry> results = reader.getPointFeatures();
+
         // Test display of a point on the map (taken from SDK example)
         Esri::ArcGISRuntime::GraphicsOverlay *overlay = new Esri::ArcGISRuntime::GraphicsOverlay(this);
 
-        Esri::ArcGISRuntime::Point dumeBeach(-118.80657463861, 34.0005930608889, Esri::ArcGISRuntime::SpatialReference::wgs84());
+        Esri::ArcGISRuntime::Point dumeBeach(results.at(0).mLon, results.at(0).mLat, Esri::ArcGISRuntime::SpatialReference::wgs84());
         
         Esri::ArcGISRuntime::SimpleLineSymbol *pointOutline = new Esri::ArcGISRuntime::SimpleLineSymbol(
             Esri::ArcGISRuntime::SimpleLineSymbolStyle::Solid, QColor(Qt::blue), 3, this);

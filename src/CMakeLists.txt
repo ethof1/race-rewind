@@ -12,6 +12,7 @@ set(HEADER_FILES
 	EsriUtils.h
 	Forward.h
 	GeodatabaseCompiler.h
+	GeodatabaseReader.h
 	RaceRewindWindow.h
 	StringUtils.h
 )
@@ -19,6 +20,7 @@ set(HEADER_FILES
 set(SOURCE_FILES
 	EsriUtils.cpp
 	GeodatabaseCompiler.cpp
+	GeodatabaseReader.cpp
 	RaceRewindWindow.cpp
 	StringUtils.cpp
 	main.cpp

@@ -14,8 +14,8 @@ int main(int argc, char *argv[])
     // Initialize the Esri SDK
     rrewind::configureEsriApi();
 
-    rrewind::GeodatabaseCompiler compiler("c:/users/etho/desktop/mycoolgdb.gdb");
-    compiler.addTelemetryEntries();
+    //rrewind::GeodatabaseCompiler compiler("c:/users/etho/desktop/mygdb.gdb");
+    //compiler.addTelemetryEntries();
 
     // Create the main window
     rrewind::RaceRewindWindow *mainWindow = new rrewind::RaceRewindWindow(nullptr);

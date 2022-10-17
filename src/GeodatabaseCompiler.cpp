@@ -77,7 +77,7 @@ namespace rrewind
 
 		FileGDBAPI::FieldDef timestampField;
 		timestampField.SetName(L"TIMESTAMP");
-		timestampField.SetType(FileGDBAPI::fieldTypeDate);
+		timestampField.SetType(FileGDBAPI::fieldTypeInteger);
 		timestampField.SetIsNullable(false);
 		fieldDefinitions.push_back(timestampField);
 
@@ -131,6 +131,12 @@ namespace rrewind
 		}
 
 		errorCode = telemetryRow.SetString(L"DRIVER_ID", L"VER");
+		if (errorCode != S_OK)
+		{
+			qCritical() << "An error occurred while setting field: " << getErrorStr(errorCode);
+		}
+
+		errorCode = telemetryRow.SetInteger(L"TIMESTAMP", 100);
 		if (errorCode != S_OK)
 		{
 			qCritical() << "An error occurred while setting field: " << getErrorStr(errorCode);
