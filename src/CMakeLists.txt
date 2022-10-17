@@ -10,12 +10,17 @@ find_package(ArcGisSdk REQUIRED)
 
 set(HEADER_FILES
 	EsriUtils.h
+	Forward.h
+	GeodatabaseCompiler.h
 	RaceRewindWindow.h
+	StringUtils.h
 )
 
 set(SOURCE_FILES
 	EsriUtils.cpp
+	GeodatabaseCompiler.cpp
 	RaceRewindWindow.cpp
+	StringUtils.cpp
 	main.cpp
 )
 
