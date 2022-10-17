@@ -1,0 +1,4 @@
+namespace rrewind
+{
+	bool configureEsriApi();
+}
