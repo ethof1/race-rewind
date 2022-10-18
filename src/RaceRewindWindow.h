@@ -1,6 +1,12 @@
 #ifndef RREWIND_RACEREWINDWINDOW_H
 #define RREWIND_RACEREWINDWINDOW_H
 
+#include "Forward.h"
+
+#include "GeodatabaseReader.h"
+
+#include <GraphicsOverlay.h>
+
 #include <QMainWindow>
 
 namespace rrewind
@@ -23,6 +29,13 @@ namespace rrewind
 		 * Create all UI components for this widget.
 		 */
 		void setupUi();
+
+		void handleTimeChanged(int newValue);
+
+	private:
+		Esri::ArcGISRuntime::GraphicsOverlay *mGraphicsOverlay;
+
+		std::unique_ptr<GeodatabaseReader> mGdbReader;
 	};
 }
 

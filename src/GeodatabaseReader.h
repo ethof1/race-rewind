@@ -29,6 +29,8 @@ namespace rrewind
 		 */
 		std::vector<TelemetryEntry> getPointFeatures();
 
+		TelemetryEntry getEntryAtTimestamp(const std::string &driverId, std::int32_t timestamp);
+
 	private:
 		/**
 		 * Open the geodatbase for reading.

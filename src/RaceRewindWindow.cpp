@@ -6,7 +6,6 @@
 #include "TelemetryEntry.h"
 
 #include <Basemap.h>
-#include <GraphicsOverlay.h>
 #include <MapGraphicsView.h>
 #include <Map.h>
 #include <PolylineBuilder.h>
@@ -14,6 +13,8 @@
 #include <SimpleFillSymbol.h>
 #include <SimpleMarkerSymbol.h>
 
+#include <QDockWidget>
+#include <QSlider>
 #include <QVBoxLayout>
 #include <QWidget>
 
@@ -36,6 +37,20 @@ namespace rrewind
 
         this->setCentralWidget(mapView);
 
+        // =================
+
+        QDockWidget *bottomDockPanel = new QDockWidget(tr("Session Time"), this);
+        bottomDockPanel->setAllowedAreas(Qt::BottomDockWidgetArea);
+        this->addDockWidget(Qt::BottomDockWidgetArea, bottomDockPanel);
+
+        QSlider *sessionTimeSlider = new QSlider(Qt::Horizontal, this);
+        sessionTimeSlider->setRange(0, 29000);
+        bottomDockPanel->setWidget(sessionTimeSlider);
+
+        connect(sessionTimeSlider, &QSlider::valueChanged, this, &RaceRewindWindow::handleTimeChanged);
+
+        // =================
+/*
         qInfo() << "Starting cache pull and read";
 
         GeodatabaseCompiler compiler("c:/users/etho/desktop/mygdb.gdb");
@@ -59,15 +74,15 @@ namespace rrewind
         compiler.close();
 
         qInfo() << "Finished cache pull and read";
-        
+ */       
         // TODO: Remove hardcode
-        GeodatabaseReader reader("c:/users/etho/desktop/mygdb.gdb");
-        std::vector<TelemetryEntry> results = reader.getPointFeatures();
+        mGdbReader = std::make_unique<GeodatabaseReader>("c:/users/etho/desktop/mygdb.gdb");
+        // std::vector<TelemetryEntry> results = reader.getPointFeatures();
 
-        qInfo() << "Found " << results.size() << " results";
+        // qInfo() << "Found " << results.size() << " results";
 
         // Test display of a point on the map (taken from SDK example)
-        Esri::ArcGISRuntime::GraphicsOverlay *overlay = new Esri::ArcGISRuntime::GraphicsOverlay(this);
+        mGraphicsOverlay = new Esri::ArcGISRuntime::GraphicsOverlay(this);
 
         Esri::ArcGISRuntime::SimpleLineSymbol *pointOutline = new Esri::ArcGISRuntime::SimpleLineSymbol(
             Esri::ArcGISRuntime::SimpleLineSymbolStyle::Solid, QColor(Qt::blue), 3, this);
@@ -78,13 +93,26 @@ namespace rrewind
         pointSymbol->setOutline(pointOutline);
 
         // Create a graphic to display the point with its symbology
-        for (const auto &entry : results)
+ //       for (const auto &entry : results)
         {
+            TelemetryEntry entry = mGdbReader->getEntryAtTimestamp("VER", 0);
             Esri::ArcGISRuntime::Point pointLoc(entry.mLon, entry.mLat, Esri::ArcGISRuntime::SpatialReference::wgs84());
-            Esri::ArcGISRuntime::Graphic* pointGraphic = new Esri::ArcGISRuntime::Graphic(pointLoc, pointSymbol, this);
-            overlay->graphics()->append(pointGraphic);
+            Esri::ArcGISRuntime::Graphic *pointGraphic = new Esri::ArcGISRuntime::Graphic(pointLoc, pointSymbol, this);
+            mGraphicsOverlay->graphics()->append(pointGraphic);
         }
 
-        mapView->graphicsOverlays()->append(overlay);
+        mapView->graphicsOverlays()->append(mGraphicsOverlay);
 	}
+
+    void RaceRewindWindow::handleTimeChanged(int newValue)
+    {
+        TelemetryEntry entry = mGdbReader->getEntryAtTimestamp("VER", newValue);
+        for (auto graphic = mGraphicsOverlay->graphics()->begin(); graphic != mGraphicsOverlay->graphics()->end(); ++graphic)
+        {
+            auto geometry = static_cast<Esri::ArcGISRuntime::Point>((*graphic)->geometry());
+            Esri::ArcGISRuntime::Point newPoint(entry.mLon, entry.mLat, Esri::ArcGISRuntime::SpatialReference::wgs84());
+
+            (*graphic)->setGeometry(newPoint);
+        }
+    }
 }

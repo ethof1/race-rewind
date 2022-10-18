@@ -40,6 +40,57 @@ namespace rrewind
 		return success;
 	}
 
+	TelemetryEntry GeodatabaseReader::getEntryAtTimestamp(const std::string &driverId, std::int32_t timestamp)
+	{
+		// TODO: Use optional?
+		TelemetryEntry entry;
+
+		FileGDBAPI::Table telemetryTable;
+		fgdbError errorCode = mGeodatabase->OpenTable(L"\\TrackPosition", telemetryTable);
+		if (errorCode != S_OK)
+		{
+			qCritical() << "An error occurred while opening the table: " << getErrorStr(errorCode);
+			return entry;
+		}
+
+		std::wstring query = L"TIMESTAMP = " + std::to_wstring(timestamp);
+
+		FileGDBAPI::EnumRows rows;
+		errorCode = telemetryTable.Search(L"*", query, false, rows);
+		if (errorCode != S_OK)
+		{
+			qCritical() << "An error occurred while retrieving query results: " << getErrorStr(errorCode);
+			return entry;
+		}
+
+		FileGDBAPI::Row row;
+		std::wstring id;
+		FileGDBAPI::PointShapeBuffer shapeBuffer;
+		FileGDBAPI::Point *point;
+		std::int32_t timeOffset;
+
+		if (rows.Next(row) == S_OK)
+		{
+			row.GetString(L"DRIVER_ID", id);
+
+			row.GetGeometry(shapeBuffer);
+			shapeBuffer.GetPoint(point);
+
+			row.GetInteger(L"TIMESTAMP", timeOffset);
+
+			entry.mDriverId = std::string(driverId.begin(), driverId.end());
+			entry.mTimeOffset = timeOffset;
+			entry.mLon = point->x;
+			entry.mLat = point->y;
+		}
+		else
+		{
+			qInfo() << "No results";
+		}
+
+		return entry;
+	}
+
 	std::vector<TelemetryEntry> GeodatabaseReader::getPointFeatures()
 	{
 		if (!mGeodatabase)
@@ -53,7 +104,7 @@ namespace rrewind
 		fgdbError errorCode = mGeodatabase->OpenTable(L"\\TrackPosition", telemetryTable);
 		if (errorCode != S_OK)
 		{
-			qCritical() << "An error occurred while opening the geodatabase: " << getErrorStr(errorCode);
+			qCritical() << "An error occurred while opening the table: " << getErrorStr(errorCode);
 			return {};
 		}
 
