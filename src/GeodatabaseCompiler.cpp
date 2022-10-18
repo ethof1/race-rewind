@@ -165,9 +165,8 @@ namespace rrewind
 		}
 
 		// TODO: Remove
-		static int counter = 1;
-		errorCode = telemetryRow.SetInteger(L"TIMESTAMP", ++counter);
-		qInfo() << "counter val: " << counter;
+		static int counter = 0;
+		errorCode = telemetryRow.SetInteger(L"TIMESTAMP", counter++);
 		if (errorCode != S_OK)
 		{
 			qCritical() << "An error occurred while setting field: " << getErrorStr(errorCode);

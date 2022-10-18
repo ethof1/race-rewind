@@ -38,7 +38,7 @@ namespace rrewind
 			return false;
 		}
 
-		if (!process.waitForFinished())
+		if (!process.waitForFinished(2 * 60000)) // 2 minutes
 		{
 			qCritical() << "Python script did not complete";
 			return false;

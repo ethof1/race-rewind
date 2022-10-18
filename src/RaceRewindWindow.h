@@ -30,6 +30,10 @@ namespace rrewind
 		 */
 		void setupUi();
 
+		void handleCompileGdb();
+
+		void handleOpenGdb();
+
 		void handleTimeChanged(int newValue);
 
 	private:

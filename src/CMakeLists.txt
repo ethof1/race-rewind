@@ -2,7 +2,7 @@
 
 set(TARGET race-rewind)
 
-find_package(Qt5 COMPONENTS Widgets Network Multimedia Positioning Sensors REQUIRED)
+find_package(Qt5 COMPONENTS Widgets Network Multimedia Positioning Concurrent Sensors REQUIRED)
 find_package(FileGdbApi REQUIRED)
 find_package(PROJ CONFIG REQUIRED)
 find_package(SQLite3 REQUIRED)
@@ -39,7 +39,7 @@ if (CMAKE_VERSION VERSION_GREATER 3.12)
 endif()
 
 include_directories(${FileGdbApi_INCLUDE_DIRS} ${ArcGisSdk_INCLUDE_DIRS})
-target_link_libraries(${TARGET} Qt5::Widgets Qt5::Network FileGdbApi PROJ::proj SQLite::SQLite3 ArcGisSdk::ArcGisSdk)
+target_link_libraries(${TARGET} Qt5::Widgets Qt5::Network Qt5::Concurrent FileGdbApi PROJ::proj SQLite::SQLite3 ArcGisSdk::ArcGisSdk)
 
 # Copy dependent Qt libraries to a subdirectory of the binary directory, to make them easier to find during the install step
 windeployqt(${TARGET} ${CMAKE_CURRENT_BINARY_DIR}/windeployqt)
