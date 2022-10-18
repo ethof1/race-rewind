@@ -1,6 +1,9 @@
 #include "RaceRewindWindow.h"
 
+#include "GeodatabaseCompiler.h"
 #include "GeodatabaseReader.h"
+#include "TelemetryCacheLoader.h"
+#include "TelemetryEntry.h"
 
 #include <Basemap.h>
 #include <GraphicsOverlay.h>
@@ -33,15 +36,39 @@ namespace rrewind
 
         this->setCentralWidget(mapView);
 
+        qInfo() << "Starting cache pull and read";
+
+        GeodatabaseCompiler compiler("c:/users/etho/desktop/mygdb.gdb");
+        compiler.startInserts();
+
+        TelemetryCacheLoader cacheLoader;
+        if (cacheLoader.pullTelemetryCache() && cacheLoader.startCacheRead())
+        {
+            while (cacheLoader.hasNextEntry())
+            {
+                TelemetryEntry entry = cacheLoader.getNextEntry();
+                compiler.addTelemetryEntry(entry);
+            }
+        }
+        else
+        {
+            qCritical() << "Could not pull or read telemetry cache";
+        }
+
+        compiler.endInserts();
+        compiler.close();
+
+        qInfo() << "Finished cache pull and read";
+        
         // TODO: Remove hardcode
         GeodatabaseReader reader("c:/users/etho/desktop/mygdb.gdb");
         std::vector<TelemetryEntry> results = reader.getPointFeatures();
 
+        qInfo() << "Found " << results.size() << " results";
+
         // Test display of a point on the map (taken from SDK example)
         Esri::ArcGISRuntime::GraphicsOverlay *overlay = new Esri::ArcGISRuntime::GraphicsOverlay(this);
 
-        Esri::ArcGISRuntime::Point dumeBeach(results.at(0).mLon, results.at(0).mLat, Esri::ArcGISRuntime::SpatialReference::wgs84());
-        
         Esri::ArcGISRuntime::SimpleLineSymbol *pointOutline = new Esri::ArcGISRuntime::SimpleLineSymbol(
             Esri::ArcGISRuntime::SimpleLineSymbolStyle::Solid, QColor(Qt::blue), 3, this);
         
@@ -51,8 +78,12 @@ namespace rrewind
         pointSymbol->setOutline(pointOutline);
 
         // Create a graphic to display the point with its symbology
-        Esri::ArcGISRuntime::Graphic* pointGraphic = new Esri::ArcGISRuntime::Graphic(dumeBeach, pointSymbol, this);
-        overlay->graphics()->append(pointGraphic);
+        for (const auto &entry : results)
+        {
+            Esri::ArcGISRuntime::Point pointLoc(entry.mLon, entry.mLat, Esri::ArcGISRuntime::SpatialReference::wgs84());
+            Esri::ArcGISRuntime::Graphic* pointGraphic = new Esri::ArcGISRuntime::Graphic(pointLoc, pointSymbol, this);
+            overlay->graphics()->append(pointGraphic);
+        }
 
         mapView->graphicsOverlays()->append(overlay);
 	}

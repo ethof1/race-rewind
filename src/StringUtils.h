@@ -1,3 +1,6 @@
+#ifndef RREWIND_STRINGUTILS_H
+#define RREWIND_STRINGUTILS_H
+
 #include "Forward.h"
 
 namespace rrewind
@@ -13,3 +16,4 @@ namespace rrewind
 	std::wstring convertToWString(const std::string& str);
 }
 
+#endif

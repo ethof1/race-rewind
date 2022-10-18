@@ -1,3 +1,6 @@
+#ifndef RREWIND_GEODATABASECOMPILER_H
+#define RREWIND_GEODATABASECOMPILER_H
+
 #include "Forward.h"
 
 // TODO: Move this to the cpp file?
@@ -22,7 +25,13 @@ namespace rrewind
 		/**
 		 * Temporary function to add test entries into the geodatabase managed by this instance.
 		 */
-		void addTelemetryEntries();
+		void addTelemetryEntry(const TelemetryEntry &entry);
+
+		void startInserts();
+
+		void endInserts();
+		
+		void close();
 
 	private:
 		/**
@@ -45,3 +54,5 @@ namespace rrewind
 		FileGDBAPI::Table mTelemetryTable;
 	};
 }
+
+#endif

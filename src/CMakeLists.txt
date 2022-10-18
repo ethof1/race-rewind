@@ -13,16 +13,22 @@ set(HEADER_FILES
 	Forward.h
 	GeodatabaseCompiler.h
 	GeodatabaseReader.h
+	LocalSpaceConverter.h
 	RaceRewindWindow.h
 	StringUtils.h
+	TelemetryCacheLoader.h
+	TelemetryEntry.h
 )
 
 set(SOURCE_FILES
 	EsriUtils.cpp
 	GeodatabaseCompiler.cpp
 	GeodatabaseReader.cpp
+	LocalSpaceConverter.cpp
 	RaceRewindWindow.cpp
 	StringUtils.cpp
+	TelemetryCacheLoader.cpp
+	TelemetryEntry.cpp
 	main.cpp
 )
 

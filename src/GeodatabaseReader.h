@@ -1,20 +1,14 @@
+#ifndef RREWIND_GEODATABASEREADER_H
+#define RREWIND_GEODATABASEREADER_H
+
 #include "Forward.h"
+
+#include "TelemetryEntry.h"
 
 #include <FileGDBAPI.h>
 
 namespace rrewind
 {
-	/**
-	 * Temporary container for entries from the geodatabase.
-	 */
-	struct TelemetryEntry
-	{
-		std::string mDriverId;
-		std::int32_t mTimeOffset;
-		double mLat;
-		double mLon;
-	};
-
 	/**
 	 * A reader of telemetry geodatabase content.
 	 */
@@ -47,3 +41,5 @@ namespace rrewind
 		std::unique_ptr<FileGDBAPI::Geodatabase> mGeodatabase;
 	};
 }
+
+#endif

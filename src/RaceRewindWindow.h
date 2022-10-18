@@ -1,3 +1,6 @@
+#ifndef RREWIND_RACEREWINDWINDOW_H
+#define RREWIND_RACEREWINDWINDOW_H
+
 #include <QMainWindow>
 
 namespace rrewind
@@ -22,3 +25,5 @@ namespace rrewind
 		void setupUi();
 	};
 }
+
+#endif

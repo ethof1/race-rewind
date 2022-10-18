@@ -1,5 +1,6 @@
 #include "GeodatabaseCompiler.h"
 #include "StringUtils.h"
+#include "TelemetryEntry.h"
 
 #include <FileGDBAPI.h>
 
@@ -100,16 +101,43 @@ namespace rrewind
 		return success;
 	}
 
-	void GeodatabaseCompiler::addTelemetryEntries()
+	// TODO: Re-visit
+	void GeodatabaseCompiler::startInserts()
+	{
+		// Lock the table for writing
+		mTelemetryTable.SetWriteLock();
+		mTelemetryTable.LoadOnlyMode(true);
+	}
+
+	// TODO: Re-visit
+	void GeodatabaseCompiler::endInserts()
+	{
+		mTelemetryTable.LoadOnlyMode(false);
+		mTelemetryTable.FreeWriteLock();
+	}
+
+	void GeodatabaseCompiler::close()
+	{
+		// TODO: Close the table and geodatabase when all writing is finished
+		fgdbError errorCode = mGeodatabase->CloseTable(mTelemetryTable);
+		if (errorCode != S_OK)
+		{
+			qCritical() << "An error occurred while closing the table: " << getErrorStr(errorCode);
+		}
+
+		errorCode = FileGDBAPI::CloseGeodatabase(*mGeodatabase);
+		if (errorCode != S_OK)
+		{
+			qCritical() << "An error occurred while closing the geodatabase: " << getErrorStr(errorCode);
+		}
+	}
+
+	void GeodatabaseCompiler::addTelemetryEntry(const TelemetryEntry &entry)
 	{
 		if (!mGeodatabase)
 		{
 			return;
 		}
-
-		// Lock the table for writing
-		mTelemetryTable.SetWriteLock();
-		mTelemetryTable.LoadOnlyMode(true);
 
 		// Create the row data
 		FileGDBAPI::Row telemetryRow;
@@ -121,8 +149,8 @@ namespace rrewind
 		FileGDBAPI::Point *point;
 		shapeBuffer.GetPoint(point);
 
-		point->x = 45.0;
-		point->y = 45.0;
+		point->x = entry.mLon;
+		point->y = entry.mLat;
 
 		fgdbError errorCode = telemetryRow.SetGeometry(shapeBuffer);
 		if (errorCode != S_OK)
@@ -130,7 +158,7 @@ namespace rrewind
 			qCritical() << "An error occurred while setting geometry: " << getErrorStr(errorCode);
 		}
 
-		errorCode = telemetryRow.SetString(L"DRIVER_ID", L"VER");
+		errorCode = telemetryRow.SetString(L"DRIVER_ID", convertToWString(entry.mDriverId));
 		if (errorCode != S_OK)
 		{
 			qCritical() << "An error occurred while setting field: " << getErrorStr(errorCode);
@@ -147,22 +175,6 @@ namespace rrewind
 		if (errorCode != S_OK)
 		{
 			qCritical() << "An error occurred while inserting row: " << getErrorStr(errorCode);
-		}
-
-		mTelemetryTable.LoadOnlyMode(false);
-		mTelemetryTable.FreeWriteLock();
-
-		// TODO: Close the table and geodatabase when all writing is finished
-		errorCode = mGeodatabase->CloseTable(mTelemetryTable);
-		if (errorCode != S_OK)
-		{
-			qCritical() << "An error occurred while closing the table: " << getErrorStr(errorCode);
-		}
-
-		errorCode = FileGDBAPI::CloseGeodatabase(*mGeodatabase);
-		if (errorCode != S_OK)
-		{
-			qCritical() << "An error occurred while closing the geodatabase: " << getErrorStr(errorCode);
 		}
 	}
 }
