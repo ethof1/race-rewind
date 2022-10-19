@@ -9,6 +9,7 @@ namespace rrewind
 {
 	namespace
 	{
+		// TODO: Remove hardcoded absolute path
 		const std::string PYTHON_PATH = "C:/Users/etho/Downloads/python-3.10.8-embed-amd64";
 		const std::string PYTHON_EXE = "python.exe";
 		const std::string PYTHON_SCRIPT = "f1test.py";
@@ -23,8 +24,7 @@ namespace rrewind
 
 	bool TelemetryCacheLoader::pullTelemetryCache()
 	{
-		// TODO: Clear the cache file
-
+		// Run the python script to pull telemetry data from the internet and cache locally to a CSV file
 		QProcess process;
 		process.setWorkingDirectory(PYTHON_PATH.c_str());
 		process.setProcessChannelMode(QProcess::MergedChannels);
@@ -64,7 +64,7 @@ namespace rrewind
 		return success;
 	}
 
-	bool TelemetryCacheLoader::hasNextEntry()
+	bool TelemetryCacheLoader::hasNextEntry() const
 	{
 		return mCacheFile.isOpen() && !mCacheFile.atEnd();
 	}
@@ -74,7 +74,9 @@ namespace rrewind
 		TelemetryEntry entry;
 		QStringList lineTokens;
 		
-		if (!mCacheFile.atEnd()) {
+		// Tokenize the line at the delimiters
+		if (!mCacheFile.atEnd())
+		{
 			QByteArray line = mCacheFile.readLine();
 			for (const auto &token : line.split(','))
 			{
@@ -91,6 +93,7 @@ namespace rrewind
 			entry.mLon = convertedPts.first;
 			entry.mLat = convertedPts.second;
 
+			// Parse the absolute timestamp and convert to an offset from the first time entry
 			QDateTime timestamp = QDateTime::fromString(lineTokens.at(1), Qt::ISODateWithMs);
 			if (timestamp.isValid())
 			{

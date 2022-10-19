@@ -1,9 +1,13 @@
+#ifndef RREWIND_FORWARD_H
+#define RREWIND_FORWARD_H
+
 // Common system includes
 #include <memory>
 #include <string>
 
 namespace rrewind
 {
+	// Forward declarations of classes in this package
 	class GeodatabaseCompiler;
 	class GeodatabaseReader;
 	class LocalSpaceConverter;
@@ -11,3 +15,5 @@ namespace rrewind
 	class TelemetryCacheLoader;
 	struct TelemetryEntry;
 }
+
+#endif

@@ -27,6 +27,9 @@ namespace rrewind
 {
     namespace
     {
+        /**
+         * Container for the map graphics style for each driver.
+         */
         struct GraphicsConfig
         {
             std::string mDriverId;
@@ -36,7 +39,8 @@ namespace rrewind
     }
 
 	RaceRewindWindow::RaceRewindWindow(QWidget *parent) :
-        QMainWindow(parent)
+        QMainWindow(parent),
+        mGraphicsOverlay(nullptr)
 	{
 		setupUi();
 	}
@@ -52,21 +56,21 @@ namespace rrewind
 
         this->setCentralWidget(mapView);
 
-        // =================
-
+        // Create a slider for adjusting the current session time
         QDockWidget *bottomDockPanel = new QDockWidget(tr("Session Time"), this);
         bottomDockPanel->setAllowedAreas(Qt::BottomDockWidgetArea);
         this->addDockWidget(Qt::BottomDockWidgetArea, bottomDockPanel);
 
         QSlider *sessionTimeSlider = new QSlider(Qt::Horizontal, this);
-        sessionTimeSlider->setRange(0, 600000);
-        sessionTimeSlider->setTickInterval(10000);
-        sessionTimeSlider->setSingleStep(5000);
+        sessionTimeSlider->setRange(0, 600000); // 10 minutes
+        sessionTimeSlider->setTickInterval(10000); // 10 seconds
+        sessionTimeSlider->setSingleStep(5000); // 5 seconds
         sessionTimeSlider->setTickPosition(QSlider::TicksBelow);
         bottomDockPanel->setWidget(sessionTimeSlider);
 
         connect(sessionTimeSlider, &QSlider::valueChanged, this, &RaceRewindWindow::handleTimeChanged);
 
+        // Create menu entries
         QMenu *fileMenu = this->menuBar()->addMenu("&File");
 
         QAction *compileGdbAction = new QAction("Compile GDB...");
@@ -83,22 +87,7 @@ namespace rrewind
         fileMenu->addSeparator();
         fileMenu->addAction(exitAction);
 
-        // =================
-       
-        // TODO: Remove hardcode
-        
-        // std::vector<TelemetryEntry> results = reader.getPointFeatures();
-
-        // qInfo() << "Found " << results.size() << " results";
-
-        // Test display of a point on the map (taken from SDK example)
         mGraphicsOverlay = new Esri::ArcGISRuntime::GraphicsOverlay(this);
-
-        
-
-        // Create a graphic to display the point with its symbology
- //       for (const auto &entry : results)
-        
 
         mapView->graphicsOverlays()->append(mGraphicsOverlay);
 	}
@@ -155,16 +144,20 @@ namespace rrewind
 
     void RaceRewindWindow::handleOpenGdb()
     {
-        // Ask the user where to save the Geodatabase
+        // Ask the user where the geodatabase is located on disk
         QString gdbPath = QFileDialog::getExistingDirectory(this, "Select Geodatabase", ".");
 
         if (QFileInfo(gdbPath).exists())
         {
+            // Open the geodatabase
             mGdbReader = std::make_unique<GeodatabaseReader>(gdbPath.toStdString());
 
             if (mGdbReader)
             {
-                // Setup the point graphic style for each driver
+                // TODO: This could be configured earlier, during the UI setup phase. Leaving
+                // this here likely will cause issues if multiple geodatabases are opened in the same application session
+
+                // Setup the point graphic style for each driver. Use team colors
                 // TODO: Load from a config file
                 std::vector<GraphicsConfig> graphicsConfig;
                 graphicsConfig.emplace_back("VER", Qt::blue, Qt::black);
@@ -172,6 +165,7 @@ namespace rrewind
 
                 for (const auto &config : graphicsConfig)
                 {
+                    // Set graphic style
                     Esri::ArcGISRuntime::SimpleLineSymbol *pointOutline = new Esri::ArcGISRuntime::SimpleLineSymbol(
                         Esri::ArcGISRuntime::SimpleLineSymbolStyle::Solid, QColor(config.mLineColor), 2, this);
 
@@ -180,7 +174,6 @@ namespace rrewind
 
                     pointSymbol->setOutline(pointOutline);
 
-                    // Esri::ArcGISRuntime::Point pointLoc(entry.mLon, entry.mLat, Esri::ArcGISRuntime::SpatialReference::wgs84());
                     Esri::ArcGISRuntime::Point pointLoc(0, 0, Esri::ArcGISRuntime::SpatialReference::wgs84());
                     Esri::ArcGISRuntime::Graphic *pointGraphic = new Esri::ArcGISRuntime::Graphic(pointLoc, pointSymbol, this);
                     
@@ -199,11 +192,11 @@ namespace rrewind
         }
     }
 
-    void RaceRewindWindow::handleTimeChanged(int newValue)
+    void RaceRewindWindow::handleTimeChanged(int newTimestamp)
     {
         if (mGdbReader)
         {
-            updateGraphicLocations(mGdbReader->getEntriesAtTimestamp(newValue));
+            updateGraphicLocations(mGdbReader->getEntriesAtTimestamp(newTimestamp));
         }
     }
 
@@ -225,7 +218,7 @@ namespace rrewind
             else
             {
                 // This driver isn't included in the provided update. The graphic should be hidden
-                // to avoid being out-of-sync
+                // to avoid being out-of-sync for large jumps in time
                 driverGraphic.second->setVisible(false);
             }
         }

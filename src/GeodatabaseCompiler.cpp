@@ -1,8 +1,7 @@
 #include "GeodatabaseCompiler.h"
+
 #include "StringUtils.h"
 #include "TelemetryEntry.h"
-
-#include <FileGDBAPI.h>
 
 #include <QtDebug>
 
@@ -10,15 +9,15 @@
 
 namespace rrewind
 {
+	// Forward-declare anonymous namespace functions, to avoid clutter at the top of files
 	namespace
 	{
-		std::wstring getErrorStr(fgdbError errorCode)
-		{
-			std::wstring errorText;
-			FileGDBAPI::ErrorInfo::GetErrorDescription(errorCode, errorText);
-			
-			return errorText;
-		}
+		/**
+		 * Helper function to retrieve the error string from an error code.
+		 * 
+		 * @todo Move to a common space
+		 */
+		std::wstring getErrorStr(fgdbError errorCode);
 	}
 
 	GeodatabaseCompiler::GeodatabaseCompiler(const std::string &folderPath) :
@@ -31,6 +30,7 @@ namespace rrewind
 		}
 		else
 		{
+			qCritical() << "Failed to create geodatabase";
 			mGeodatabase.reset(nullptr);
 		}
 	}
@@ -69,6 +69,8 @@ namespace rrewind
 		
 		// Define the field types
 		std::vector<FileGDBAPI::FieldDef> fieldDefinitions;
+
+		// TODO: Use a schema class to avoid hard-coded field/table names
 
 		FileGDBAPI::FieldDef driverIdField;
 		driverIdField.SetName(L"DRIVER_ID");
@@ -112,6 +114,7 @@ namespace rrewind
 	// TODO: Re-visit
 	void GeodatabaseCompiler::endInserts()
 	{
+		// Unlock the table for writing
 		mTelemetryTable.LoadOnlyMode(false);
 		mTelemetryTable.FreeWriteLock();
 	}
@@ -164,8 +167,6 @@ namespace rrewind
 			qCritical() << "An error occurred while setting field: " << getErrorStr(errorCode);
 		}
 
-		// TODO: Remove
-		// static int counter = 0;
 		errorCode = telemetryRow.SetInteger(L"TIMESTAMP", entry.mTimeOffset);
 		if (errorCode != S_OK)
 		{
@@ -177,6 +178,20 @@ namespace rrewind
 		if (errorCode != S_OK)
 		{
 			qCritical() << "An error occurred while inserting row: " << getErrorStr(errorCode);
+		}
+	}
+}
+
+namespace rrewind
+{
+	namespace
+	{
+		std::wstring getErrorStr(fgdbError errorCode)
+		{
+			std::wstring errorText;
+			FileGDBAPI::ErrorInfo::GetErrorDescription(errorCode, errorText);
+
+			return errorText;
 		}
 	}
 }

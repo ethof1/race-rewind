@@ -34,8 +34,8 @@ set(SOURCE_FILES
 
 add_executable(${TARGET} ${SOURCE_FILES} ${HEADER_FILES})
 
-if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET ${TARGET} PROPERTY CXX_STANDARD 20)
+if(CMAKE_VERSION VERSION_GREATER 3.12)
+	set_property(TARGET ${TARGET} PROPERTY CXX_STANDARD 20)
 endif()
 
 include_directories(${FileGdbApi_INCLUDE_DIRS} ${ArcGisSdk_INCLUDE_DIRS})
@@ -47,7 +47,7 @@ windeployqt(${TARGET} ${CMAKE_CURRENT_BINARY_DIR}/windeployqt)
 # Install this executable
 install(TARGETS ${TARGET} DESTINATION bin)
 
-# Install runtime libraries (dlls) for dependent libraries
+# Install runtime libraries (dlls) for dependent libraries. Some Qt libraries are required by the Esri ArcGIS SDK
 install(IMPORTED_RUNTIME_ARTIFACTS FileGdbApi PROJ::proj ArcGisSdk::Common ArcGisSdk::Runtime Qt5::Network Qt5::Positioning Qt5::Sensors Qt5::Multimedia)
 
 # Install dependent Qt libraries

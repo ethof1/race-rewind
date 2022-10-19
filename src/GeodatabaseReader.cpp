@@ -8,13 +8,12 @@ namespace rrewind
 {
 	namespace
 	{
-		std::wstring getErrorStr(fgdbError errorCode)
-		{
-			std::wstring errorText;
-			FileGDBAPI::ErrorInfo::GetErrorDescription(errorCode, errorText);
-
-			return errorText;
-		}
+		/**
+		 * Helper function to retrieve the error string from an error code.
+		 *
+		 * @todo Move to a common space
+		 */
+		std::wstring getErrorStr(fgdbError errorCode);
 	}
 
 	GeodatabaseReader::GeodatabaseReader(const std::string &gdbPath) :
@@ -22,6 +21,7 @@ namespace rrewind
 	{
 		if (!openGeodatabase(gdbPath))
 		{
+			qCritical() << "Could not open geodatabase";
 			mGeodatabase.reset();
 		}
 	}
@@ -46,6 +46,8 @@ namespace rrewind
 				success = false;
 			}
 		}
+
+		// TODO: Add a corresponding closeGeodatabase call
 		
 		return success;
 	}
@@ -74,6 +76,7 @@ namespace rrewind
 		FileGDBAPI::Point *point;
 		std::int32_t timeOffset;
 
+		// TODO: Determine why this row iteration and processing is unexpectedly slow
 		while (rows.Next(row) == S_OK)
 		{
 			row.GetString(L"DRIVER_ID", wDriverId);
@@ -101,56 +104,18 @@ namespace rrewind
 
 		return entries;
 	}
+}
 
-	std::vector<TelemetryEntry> GeodatabaseReader::getPointFeatures()
+namespace rrewind
+{
+	namespace
 	{
-		if (!mGeodatabase)
+		std::wstring getErrorStr(fgdbError errorCode)
 		{
-			return {};
+			std::wstring errorText;
+			FileGDBAPI::ErrorInfo::GetErrorDescription(errorCode, errorText);
+
+			return errorText;
 		}
-
-		std::vector<TelemetryEntry> results;
-
-		FileGDBAPI::Table telemetryTable;
-		fgdbError errorCode = mGeodatabase->OpenTable(L"\\TrackPosition", telemetryTable);
-		if (errorCode != S_OK)
-		{
-			qCritical() << "An error occurred while opening the table: " << getErrorStr(errorCode);
-			return {};
-		}
-
-		FileGDBAPI::EnumRows rows;
-		errorCode = telemetryTable.Search(L"*", L"", false, rows);
-		if (errorCode != S_OK)
-		{
-			qCritical() << "An error occurred while retrieving query results: " << getErrorStr(errorCode);
-			return {};
-		}
-
-		FileGDBAPI::Row row;
-		std::wstring driverId;
-		FileGDBAPI::PointShapeBuffer shapeBuffer;
-		FileGDBAPI::Point *point;
-		std::int32_t timeOffset;
-
-		while (rows.Next(row) == S_OK)
-		{
-			row.GetString(L"DRIVER_ID", driverId);
-
-			row.GetGeometry(shapeBuffer);
-			shapeBuffer.GetPoint(point);
-
-			row.GetInteger(L"TIMESTAMP", timeOffset);
-
-			TelemetryEntry entry;
-			entry.mDriverId = std::string(driverId.begin(), driverId.end());
-			entry.mTimeOffset = timeOffset;
-			entry.mLon = point->x;
-			entry.mLat = point->y;
-
-			results.push_back(entry);
-		}
-
-		return results;
 	}
 }

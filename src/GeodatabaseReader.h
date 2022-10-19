@@ -12,7 +12,7 @@
 namespace rrewind
 {
 	/**
-	 * A reader of telemetry geodatabase content.
+	 * A reader for telemetry geodatabase content.
 	 */
 	class GeodatabaseReader
 	{
@@ -25,12 +25,12 @@ namespace rrewind
 		GeodatabaseReader(const std::string &gdbPath);
 
 		/**
-		 * Retrieve point features from the geodatabase.
-		 * 
-		 * @return A list of all telemetry point features
+		 * Retrieve telemetry entries for all available drivers at the timestamp closest to
+		 * a target timestamp, but not after.
+		 *
+		 * @param timestamp An offset from the session start time, in milliseconds
+		 * @return A map indexed by driver ID, associated with the telemetry entry closest to the @p timestamp
 		 */
-		std::vector<TelemetryEntry> getPointFeatures();
-
 		std::map<std::string, TelemetryEntry> getEntriesAtTimestamp(std::int32_t timestamp);
 
 	private:
@@ -42,6 +42,7 @@ namespace rrewind
 		bool openGeodatabase(const std::string &gdbPath);
 
 	private:
+		// Use a nullptr as a sentinel for the reader being in an invalid state
 		std::unique_ptr<FileGDBAPI::Geodatabase> mGeodatabase;
 		FileGDBAPI::Table mTelemetryTable;
 	};

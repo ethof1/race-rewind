@@ -19,7 +19,8 @@ namespace rrewind
         }
         else
         {
-            qWarning() << "An environment variable named \"ARCGIS_API_KEY\" must be set. Closing application...";
+            qWarning() << "Could not configure ArcGIS API: An environment variable "
+                << "named \"ARCGIS_API_KEY\" must be set.";
             success = false;
         }
 
