@@ -37,58 +37,69 @@ namespace rrewind
 			success = false;
 		}
 
+		if (success)
+		{
+			fgdbError errorCode = mGeodatabase->OpenTable(L"\\TrackPosition", mTelemetryTable);
+			if (errorCode != S_OK)
+			{
+				qCritical() << "An error occurred while opening the table: " << getErrorStr(errorCode);
+				success = false;
+			}
+		}
+		
 		return success;
 	}
 
-	TelemetryEntry GeodatabaseReader::getEntryAtTimestamp(const std::string &driverId, std::int32_t timestamp)
+	std::map<std::string, TelemetryEntry> GeodatabaseReader::getEntriesAtTimestamp(std::int32_t timestamp)
 	{
-		// TODO: Use optional?
-		TelemetryEntry entry;
+		std::map<std::string, TelemetryEntry> entries;
 
-		FileGDBAPI::Table telemetryTable;
-		fgdbError errorCode = mGeodatabase->OpenTable(L"\\TrackPosition", telemetryTable);
-		if (errorCode != S_OK)
-		{
-			qCritical() << "An error occurred while opening the table: " << getErrorStr(errorCode);
-			return entry;
-		}
-
-		std::wstring query = L"TIMESTAMP = " + std::to_wstring(timestamp);
+		// Since it doesn't seem an aggregation query can be performed 
+		// (i.e., MAX() of timestamp less than target), search within a range
+		std::wstring query = L"TIMESTAMP <= " + std::to_wstring(timestamp) + L" AND TIMESTAMP > " + std::to_wstring(timestamp - 500);
 
 		FileGDBAPI::EnumRows rows;
-		errorCode = telemetryTable.Search(L"*", query, false, rows);
+
+		fgdbError errorCode = mTelemetryTable.Search(L"*", query, true, rows);
 		if (errorCode != S_OK)
 		{
 			qCritical() << "An error occurred while retrieving query results: " << getErrorStr(errorCode);
-			return entry;
+			return entries;
 		}
 
 		FileGDBAPI::Row row;
-		std::wstring id;
+		std::wstring wDriverId;
+		std::string driverId;
 		FileGDBAPI::PointShapeBuffer shapeBuffer;
 		FileGDBAPI::Point *point;
 		std::int32_t timeOffset;
 
-		if (rows.Next(row) == S_OK)
+		while (rows.Next(row) == S_OK)
 		{
-			row.GetString(L"DRIVER_ID", id);
-
-			row.GetGeometry(shapeBuffer);
-			shapeBuffer.GetPoint(point);
-
+			row.GetString(L"DRIVER_ID", wDriverId);
 			row.GetInteger(L"TIMESTAMP", timeOffset);
 
-			entry.mDriverId = std::string(driverId.begin(), driverId.end());
-			entry.mTimeOffset = timeOffset;
-			entry.mLon = point->x;
-			entry.mLat = point->y;
-		}
-		else
-		{
-			qInfo() << "No results";
+			// TODO: Use a better conversion
+			driverId.assign(wDriverId.begin(), wDriverId.end());
+			
+			// For each driver, find the result that is closest to the target timestamp
+			auto entryItr = entries.find(driverId);
+			if (entryItr == entries.end() || timeOffset > entryItr->second.mTimeOffset)
+			{
+				row.GetGeometry(shapeBuffer);
+				shapeBuffer.GetPoint(point);
+
+				TelemetryEntry entry;
+				entry.mDriverId = driverId;
+				entry.mTimeOffset = timeOffset;
+				entry.mLon = point->x;
+				entry.mLat = point->y;
+
+				entries.insert_or_assign(driverId, entry);
+			}
 		}
 
-		return entry;
+		return entries;
 	}
 
 	std::vector<TelemetryEntry> GeodatabaseReader::getPointFeatures()

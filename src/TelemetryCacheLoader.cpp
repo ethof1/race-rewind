@@ -1,6 +1,7 @@
 #include "TelemetryCacheLoader.h"
 
 #include <QFile>
+#include <QDateTime>
 #include <QProcess>
 #include <QtDebug>
 
@@ -14,7 +15,8 @@ namespace rrewind
 		const std::string CACHE_OUTPUT_FILE = "f1.csv";
 	}
 
-	TelemetryCacheLoader::TelemetryCacheLoader()
+	TelemetryCacheLoader::TelemetryCacheLoader() :
+		mBaseEpochMsecs(0)
 	{
 		// Do nothing
 	}
@@ -53,12 +55,7 @@ namespace rrewind
 
 		// Load the cache CSV file
 		mCacheFile.setFileName((PYTHON_PATH + "/" + CACHE_OUTPUT_FILE).c_str());
-		if (mCacheFile.open(QIODevice::ReadOnly))
-		{
-			// The first line is a header line, so read past it
-			mCacheFile.readLine();
-		}
-		else
+		if (!mCacheFile.open(QIODevice::ReadOnly))
 		{
 			qCritical() << "Could not open cache file for reading: " << mCacheFile.errorString();
 			success = false;
@@ -86,16 +83,30 @@ namespace rrewind
 		}
 
 		// Ignore the line if it is not the expected size
-		if (lineTokens.size() == 9)
+		if (lineTokens.size() == 10)
 		{
-			entry.mDriverId = "VER";
+			entry.mDriverId = lineTokens.at(9).trimmed().toStdString();
 
 			auto convertedPts = mPtConverter.convert(lineTokens.at(3).toDouble(), lineTokens.at(4).toDouble());
 			entry.mLon = convertedPts.first;
 			entry.mLat = convertedPts.second;
 
-			// TODO: Read and convert from file
-			entry.mTimeOffset = 10;
+			QDateTime timestamp = QDateTime::fromString(lineTokens.at(1), Qt::ISODateWithMs);
+			if (timestamp.isValid())
+			{
+				qint64 epochMsecs = timestamp.toMSecsSinceEpoch();
+				
+				// Set a base timestamp if this is the first entry
+				if (mBaseEpochMsecs == 0)
+				{
+					mBaseEpochMsecs = epochMsecs;
+				}
+
+				qint64 timeOffset = epochMsecs - mBaseEpochMsecs;
+				
+				// The timeOffset range should be within 32 bits, so this conversion is safe
+				entry.mTimeOffset = static_cast<std::int32_t>(timeOffset);
+			}
 		}
 
 		return entry;

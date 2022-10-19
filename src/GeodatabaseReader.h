@@ -7,6 +7,8 @@
 
 #include <FileGDBAPI.h>
 
+#include <map>
+
 namespace rrewind
 {
 	/**
@@ -29,7 +31,7 @@ namespace rrewind
 		 */
 		std::vector<TelemetryEntry> getPointFeatures();
 
-		TelemetryEntry getEntryAtTimestamp(const std::string &driverId, std::int32_t timestamp);
+		std::map<std::string, TelemetryEntry> getEntriesAtTimestamp(std::int32_t timestamp);
 
 	private:
 		/**
@@ -41,6 +43,7 @@ namespace rrewind
 
 	private:
 		std::unique_ptr<FileGDBAPI::Geodatabase> mGeodatabase;
+		FileGDBAPI::Table mTelemetryTable;
 	};
 }
 

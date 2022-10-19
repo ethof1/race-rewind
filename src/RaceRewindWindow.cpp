@@ -25,6 +25,16 @@
 
 namespace rrewind
 {
+    namespace
+    {
+        struct GraphicsConfig
+        {
+            std::string mDriverId;
+            Qt::GlobalColor mFillColor;
+            Qt::GlobalColor mLineColor;
+        };
+    }
+
 	RaceRewindWindow::RaceRewindWindow(QWidget *parent) :
         QMainWindow(parent)
 	{
@@ -49,7 +59,10 @@ namespace rrewind
         this->addDockWidget(Qt::BottomDockWidgetArea, bottomDockPanel);
 
         QSlider *sessionTimeSlider = new QSlider(Qt::Horizontal, this);
-        sessionTimeSlider->setRange(0, 29000);
+        sessionTimeSlider->setRange(0, 600000);
+        sessionTimeSlider->setTickInterval(10000);
+        sessionTimeSlider->setSingleStep(5000);
+        sessionTimeSlider->setTickPosition(QSlider::TicksBelow);
         bottomDockPanel->setWidget(sessionTimeSlider);
 
         connect(sessionTimeSlider, &QSlider::valueChanged, this, &RaceRewindWindow::handleTimeChanged);
@@ -93,7 +106,7 @@ namespace rrewind
     void RaceRewindWindow::handleCompileGdb()
     {
         // Ask the user where to save the Geodatabase
-        QString gdbPath = QFileDialog::getExistingDirectory(this, "Geodatabase location", ".");
+        QString gdbPath = QFileDialog::getExistingDirectory(this, "Geodatabase Location", ".");
         
         // Show an indeterminate progress dialog while compiling
         QProgressDialog progress(this);
@@ -143,7 +156,7 @@ namespace rrewind
     void RaceRewindWindow::handleOpenGdb()
     {
         // Ask the user where to save the Geodatabase
-        QString gdbPath = QFileDialog::getExistingDirectory(this, "Geodatabase location", ".");
+        QString gdbPath = QFileDialog::getExistingDirectory(this, "Select Geodatabase", ".");
 
         if (QFileInfo(gdbPath).exists())
         {
@@ -151,20 +164,37 @@ namespace rrewind
 
             if (mGdbReader)
             {
-                qInfo() << "Loaded GDB Path";
-                TelemetryEntry entry = mGdbReader->getEntryAtTimestamp("VER", 0);
+                // Setup the point graphic style for each driver
+                // TODO: Load from a config file
+                std::vector<GraphicsConfig> graphicsConfig;
+                graphicsConfig.emplace_back("VER", Qt::blue, Qt::black);
+                graphicsConfig.emplace_back("PER", Qt::blue, Qt::yellow);
 
-                Esri::ArcGISRuntime::SimpleLineSymbol *pointOutline = new Esri::ArcGISRuntime::SimpleLineSymbol(
-                    Esri::ArcGISRuntime::SimpleLineSymbolStyle::Solid, QColor(Qt::blue), 3, this);
+                for (const auto &config : graphicsConfig)
+                {
+                    Esri::ArcGISRuntime::SimpleLineSymbol *pointOutline = new Esri::ArcGISRuntime::SimpleLineSymbol(
+                        Esri::ArcGISRuntime::SimpleLineSymbolStyle::Solid, QColor(config.mLineColor), 2, this);
 
-                Esri::ArcGISRuntime::SimpleMarkerSymbol *pointSymbol = new Esri::ArcGISRuntime::SimpleMarkerSymbol(
-                    Esri::ArcGISRuntime::SimpleMarkerSymbolStyle::Circle, QColor(Qt::red), 10, this);
+                    Esri::ArcGISRuntime::SimpleMarkerSymbol *pointSymbol = new Esri::ArcGISRuntime::SimpleMarkerSymbol(
+                        Esri::ArcGISRuntime::SimpleMarkerSymbolStyle::Circle, QColor(config.mFillColor), 10, this);
 
-                pointSymbol->setOutline(pointOutline);
+                    pointSymbol->setOutline(pointOutline);
 
-                Esri::ArcGISRuntime::Point pointLoc(entry.mLon, entry.mLat, Esri::ArcGISRuntime::SpatialReference::wgs84());
-                Esri::ArcGISRuntime::Graphic *pointGraphic = new Esri::ArcGISRuntime::Graphic(pointLoc, pointSymbol, this);
-                mGraphicsOverlay->graphics()->append(pointGraphic);
+                    // Esri::ArcGISRuntime::Point pointLoc(entry.mLon, entry.mLat, Esri::ArcGISRuntime::SpatialReference::wgs84());
+                    Esri::ArcGISRuntime::Point pointLoc(0, 0, Esri::ArcGISRuntime::SpatialReference::wgs84());
+                    Esri::ArcGISRuntime::Graphic *pointGraphic = new Esri::ArcGISRuntime::Graphic(pointLoc, pointSymbol, this);
+                    
+                    // Hide until the first update is received
+                    pointGraphic->setVisible(false);
+                    
+                    mGraphicsOverlay->graphics()->append(pointGraphic);
+                    
+                    // Store with an index for easy retrieval upon update
+                    mDriverGraphicMap.insert_or_assign(config.mDriverId, pointGraphic);
+                }
+
+                // Set the initial graphic locations
+                updateGraphicLocations(mGdbReader->getEntriesAtTimestamp(0));
             }
         }
     }
@@ -173,15 +203,31 @@ namespace rrewind
     {
         if (mGdbReader)
         {
-            TelemetryEntry entry = mGdbReader->getEntryAtTimestamp("VER", newValue);
-            for (auto graphic = mGraphicsOverlay->graphics()->begin(); graphic != mGraphicsOverlay->graphics()->end(); ++graphic)
-            {
-                auto geometry = static_cast<Esri::ArcGISRuntime::Point>((*graphic)->geometry());
-                Esri::ArcGISRuntime::Point newPoint(entry.mLon, entry.mLat, Esri::ArcGISRuntime::SpatialReference::wgs84());
+            updateGraphicLocations(mGdbReader->getEntriesAtTimestamp(newValue));
+        }
+    }
 
-                (*graphic)->setGeometry(newPoint);
+    void RaceRewindWindow::updateGraphicLocations(const std::map<std::string, TelemetryEntry> &driverTelemetryMap)
+    {
+        for (auto driverGraphic : mDriverGraphicMap)
+        {
+            auto driverTelemEntry = driverTelemetryMap.find(driverGraphic.first);
+            if (driverTelemEntry != driverTelemetryMap.end())
+            {
+                auto geometry = driverGraphic.second->geometry();
+
+                Esri::ArcGISRuntime::Point newPoint(driverTelemEntry->second.mLon,
+                    driverTelemEntry->second.mLat, Esri::ArcGISRuntime::SpatialReference::wgs84());
+
+                driverGraphic.second->setGeometry(newPoint);
+                driverGraphic.second->setVisible(true);
+            }
+            else
+            {
+                // This driver isn't included in the provided update. The graphic should be hidden
+                // to avoid being out-of-sync
+                driverGraphic.second->setVisible(false);
             }
         }
-        
     }
 }

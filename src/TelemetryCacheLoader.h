@@ -26,6 +26,8 @@ namespace rrewind
 	private:
 		QFile mCacheFile;
 		LocalSpaceConverter mPtConverter;
+
+		qint64 mBaseEpochMsecs;
 	};
 }
 

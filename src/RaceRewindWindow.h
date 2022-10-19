@@ -6,8 +6,11 @@
 #include "GeodatabaseReader.h"
 
 #include <GraphicsOverlay.h>
+#include <Graphic.h>
 
 #include <QMainWindow>
+
+#include <map>
 
 namespace rrewind
 {
@@ -36,8 +39,11 @@ namespace rrewind
 
 		void handleTimeChanged(int newValue);
 
+		void updateGraphicLocations(const std::map<std::string, TelemetryEntry> &driverTelemetryMap);
+
 	private:
 		Esri::ArcGISRuntime::GraphicsOverlay *mGraphicsOverlay;
+		std::map<std::string, Esri::ArcGISRuntime::Graphic *> mDriverGraphicMap;
 
 		std::unique_ptr<GeodatabaseReader> mGdbReader;
 	};
