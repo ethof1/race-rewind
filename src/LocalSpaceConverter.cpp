@@ -4,12 +4,12 @@ namespace rrewind
 {
 	LocalSpaceConverter::LocalSpaceConverter()
 	{
-		// A topographic coordinate system seemed to be the best fit for this kind of transformation.
+		// A topocentric coordinate system seemed to be the best fit for this kind of transformation.
 		// See https://proj.org/operations/conversions/topocentric.html
 
-		// TODO: Remove hard code of anchor location
+		// TODO: Remove hardcode of anchor location
 		mProjSrs = proj_create(0, "+proj=pipeline +step +proj=cart +ellps=WGS84 +units=m +step +proj=topocentric "
-			"+ellps=WGS84 +lat_0=45.6162690837484 +lon_0=9.2825406854031 +h_0=0 +units=dm");
+			"+ellps=WGS84 +lat_0=45.61705 +lon_0=9.28258 +h_0=0 +units=dm");
 	}
 
 	std::pair<double, double> LocalSpaceConverter::convert(int localX, int localY)

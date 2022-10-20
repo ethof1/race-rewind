@@ -6,12 +6,15 @@
 #include "TelemetryEntry.h"
 
 #include <Basemap.h>
+#include <CompositeSymbol.h>
 #include <MapGraphicsView.h>
 #include <Map.h>
 #include <PolylineBuilder.h>
 #include <PolygonBuilder.h>
 #include <SimpleFillSymbol.h>
+#include <SimpleLabelExpression.h>
 #include <SimpleMarkerSymbol.h>
+#include <TextSymbol.h>
 
 #include <QDockWidget>
 #include <QFileDialog>
@@ -154,7 +157,7 @@ namespace rrewind
 
             if (mGdbReader)
             {
-                // TODO: This could be configured earlier, during the UI setup phase. Leaving
+                // TODO: The graphics could be configured earlier, during the UI setup phase. Leaving
                 // this here likely will cause issues if multiple geodatabases are opened in the same application session
 
                 // Setup the point graphic style for each driver. Use team colors
@@ -162,10 +165,30 @@ namespace rrewind
                 std::vector<GraphicsConfig> graphicsConfig;
                 graphicsConfig.emplace_back("VER", Qt::blue, Qt::black);
                 graphicsConfig.emplace_back("PER", Qt::blue, Qt::yellow);
+                graphicsConfig.emplace_back("RUS", Qt::cyan, Qt::black);
+                graphicsConfig.emplace_back("HAM", Qt::cyan, Qt::yellow);
+                graphicsConfig.emplace_back("LEC", Qt::red, Qt::black);
+                graphicsConfig.emplace_back("SAI", Qt::red, Qt::yellow);
+                graphicsConfig.emplace_back("RIC", Qt::darkYellow, Qt::black);
+                graphicsConfig.emplace_back("NOR", Qt::darkYellow, Qt::yellow);
+                graphicsConfig.emplace_back("ALO", Qt::magenta, Qt::black);
+                graphicsConfig.emplace_back("OCO", Qt::magenta, Qt::yellow);
+                graphicsConfig.emplace_back("VET", Qt::darkGreen, Qt::black);
+                graphicsConfig.emplace_back("STR", Qt::darkGreen, Qt::yellow);
+                graphicsConfig.emplace_back("GAS", Qt::darkBlue, Qt::black);
+                graphicsConfig.emplace_back("TSU", Qt::white, Qt::yellow);
+                graphicsConfig.emplace_back("BOT", Qt::darkRed, Qt::black);
+                graphicsConfig.emplace_back("ZHO", Qt::darkRed, Qt::yellow);
+                graphicsConfig.emplace_back("MAG", Qt::gray, Qt::black);
+                graphicsConfig.emplace_back("MSC", Qt::gray, Qt::yellow);
+                graphicsConfig.emplace_back("DEV", Qt::darkGray, Qt::black);
+                graphicsConfig.emplace_back("LAT", Qt::darkGray, Qt::yellow);
+
+                mGraphicsOverlay->setLabelsEnabled(true);
 
                 for (const auto &config : graphicsConfig)
                 {
-                    // Set graphic style
+                    // Set point graphic style
                     Esri::ArcGISRuntime::SimpleLineSymbol *pointOutline = new Esri::ArcGISRuntime::SimpleLineSymbol(
                         Esri::ArcGISRuntime::SimpleLineSymbolStyle::Solid, QColor(config.mLineColor), 2, this);
 
@@ -174,8 +197,26 @@ namespace rrewind
 
                     pointSymbol->setOutline(pointOutline);
 
+                    // Set text label for driver name
+                    Esri::ArcGISRuntime::TextSymbol *textSymbol = new Esri::ArcGISRuntime::TextSymbol(
+                        config.mDriverId.c_str(), QColor(Qt::black), 12.0, Esri::ArcGISRuntime::HorizontalAlignment::Right, 
+                        Esri::ArcGISRuntime::VerticalAlignment::Middle, this);
+                    
+                    textSymbol->setHaloColor(Qt::white);
+                    textSymbol->setHaloWidth(3);
+                    textSymbol->setOffsetX(-10);
+                    textSymbol->setOffsetY(5);
+
+                    // Create a composite symbol that includes the point and the label
+                    QList<Esri::ArcGISRuntime::Symbol *> symbols;
+                    symbols.append(pointSymbol);
+                    symbols.append(textSymbol);
+
+                    Esri::ArcGISRuntime::CompositeSymbol *compositeSymbol = new Esri::ArcGISRuntime::CompositeSymbol(symbols, this);
+
+                    // Initialize the point to (0,0) until the first update is received
                     Esri::ArcGISRuntime::Point pointLoc(0, 0, Esri::ArcGISRuntime::SpatialReference::wgs84());
-                    Esri::ArcGISRuntime::Graphic *pointGraphic = new Esri::ArcGISRuntime::Graphic(pointLoc, pointSymbol, this);
+                    Esri::ArcGISRuntime::Graphic *pointGraphic = new Esri::ArcGISRuntime::Graphic(pointLoc, compositeSymbol, this);
                     
                     // Hide until the first update is received
                     pointGraphic->setVisible(false);

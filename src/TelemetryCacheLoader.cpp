@@ -40,7 +40,9 @@ namespace rrewind
 			return false;
 		}
 
-		if (!process.waitForFinished(2 * 60000)) // 2 minutes
+		// To be safe, timeout after 10 minutes. In addition to the time required to pull the remote cache, for a full 
+		// race with ~0.5 second sampling for 20 drivers, there will be on the order of a million samples to process
+		if (!process.waitForFinished(10 * 60000)) 
 		{
 			qCritical() << "Python script did not complete";
 			return false;

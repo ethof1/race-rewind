@@ -100,6 +100,14 @@ namespace rrewind
 			success = false;
 		}
 
+		// Create an index for the TIMESTAMP field, since that will be the primary search field
+		FileGDBAPI::IndexDef def;
+		def.SetFields(L"TIMESTAMP");
+		def.SetIsUnique(false);
+		def.SetName(L"TIME_IDX");
+
+		mTelemetryTable.AddIndex(def);
+
 		return success;
 	}
 
