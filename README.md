@@ -8,6 +8,6 @@ It uses the [FastF1 python project](https://theoehrly.github.io/Fast-F1) to retr
 Currently, the application will only playback position data for each vehicle.
 
 ## Demo Video
-View the [demo video](https://onedrive.live.com/embed?cid=61F5753FC2229CDF&resid=61F5753FC2229CDF%21150&authkey=APRbUXPlwrQM54Q), 
+View the [demo video](https://1drv.ms/v/s!At-cIsI_dfVhgRZDpAjsDLiCoZy7?e=E94KjF), 
 which shows compiling telemetry data from the 2022 Italian Grand Prix into a File Geodatabase, and then using the Geodatabase to play back each 
 vehicle's position trace during the race.
